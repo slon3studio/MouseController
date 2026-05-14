@@ -1,0 +1,24 @@
+# Xcode
+DerivedData/
+.build/
+Packages/
+
+# User settings
+*.xcuserstate
+xcuserdata/
+
+# macOS
+.DS_Store
+
+# Build folders
+build/
+
+# Swift Package Manager
+.swiftpm/
+
+# Archives
+*.xcarchive
+
+# App files
+*.app
+*.ipa
