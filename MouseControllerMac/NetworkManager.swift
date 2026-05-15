@@ -85,6 +85,30 @@ class NetworkManager {
                 scrollBy(dy: dy)
             }
         }
+        
+        if message == "ENTER" {
+            pressEnter()
+        }
+    }
+    
+    func pressEnter() {
+        let source = CGEventSource(stateID: .hidSystemState)
+        let keyCode: CGKeyCode = 36
+
+        let keyDown = CGEvent(
+            keyboardEventSource: source,
+            virtualKey: keyCode,
+            keyDown: true
+        )
+
+        let keyUp = CGEvent(
+            keyboardEventSource: source,
+            virtualKey: keyCode,
+            keyDown: false
+        )
+
+        keyDown?.post(tap: .cghidEventTap)
+        keyUp?.post(tap: .cghidEventTap)
     }
     
     func scrollBy(dy: Double) {

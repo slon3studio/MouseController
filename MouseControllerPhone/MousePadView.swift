@@ -12,6 +12,8 @@ struct MousePadView: View {
     @State private var connectionStatus = "Connecting..."
     @State private var isReady = false
 
+    @FocusState private var isKeyboardFocused: Bool
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -24,30 +26,51 @@ struct MousePadView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 18) {
-                headerView
+            GeometryReader { geometry in
+                ScrollView {
+                    VStack(spacing: 18) {
+                        headerView
 
-                touchPadCard
+                        touchPadCard(height: touchPadHeight(for: geometry.size.height))
 
-                keyboardField
+                        if !isReady {
+                            reconnectButton
+                        }
 
-                if !isReady {
-                    reconnectButton
+                        Spacer(minLength: 120)
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 12)
                 }
+                .scrollDismissesKeyboard(.interactively)
+                .safeAreaInset(edge: .bottom) {
+                    VStack(spacing: 10) {
+                        keyboardField
 
-                Text("Tap to click • Drag to move • Two fingers to scroll")
-                    .font(.footnote)
-                    .foregroundColor(.white.opacity(0.45))
-                    .padding(.bottom, 12)
+                        Text("Tap to click • Drag to move • Two fingers to scroll")
+                            .font(.footnote)
+                            .foregroundColor(.white.opacity(0.45))
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
+                    .background(Color.black.opacity(0.95))
+                }
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
         }
         .onAppear {
             connect()
         }
         .onDisappear {
             disconnect()
+        }
+    }
+
+    func touchPadHeight(for screenHeight: CGFloat) -> CGFloat {
+        if isKeyboardFocused {
+            return max(320, screenHeight * 0.42)
+        } else {
+            return max(300, min(500, screenHeight * 0.58))
         }
     }
 
@@ -91,23 +114,22 @@ struct MousePadView: View {
             .background(Color.white.opacity(0.08))
             .cornerRadius(20)
         }
-        .padding(.top, 8)
     }
 
-    var touchPadCard: some View {
+    func touchPadCard(height: CGFloat) -> some View {
         TouchPadView(
             onMove: { dx, dy in
-                sendMove(dx: dx * 3, dy: dy * 3)
+                sendMove(dx: dx * 2.5, dy: dy * 2.5)
             },
             onClick: {
                 sendClick()
             },
             onScroll: { dy in
-                sendScroll(dy: dy)
+                sendScroll(dy)
             }
         )
         .frame(maxWidth: .infinity)
-        .frame(height: 470)
+        .frame(height: height)
         .background(
             RoundedRectangle(cornerRadius: 28)
                 .fill(Color.white.opacity(0.08))
@@ -136,7 +158,9 @@ struct MousePadView: View {
 
     var keyboardField: some View {
         TextField("Type here", text: $keyboardText)
+            .focused($isKeyboardFocused)
             .keyboardType(.default)
+            .submitLabel(.go)
             .autocorrectionDisabled()
             .textInputAutocapitalization(.never)
             .padding()
@@ -148,6 +172,9 @@ struct MousePadView: View {
                     .stroke(Color.white.opacity(0.12))
             )
             .disabled(!isReady)
+            .onSubmit {
+                send("ENTER")
+            }
             .onChange(of: keyboardText) { oldValue, newValue in
                 if newValue.count > oldValue.count {
                     let addedText = String(newValue.dropFirst(oldValue.count))
@@ -238,7 +265,7 @@ struct MousePadView: View {
         send("CLICK")
     }
 
-    func sendScroll(dy: CGFloat) {
+    func sendScroll(_ dy: CGFloat) {
         send("SCROLL:\(dy)")
     }
 
